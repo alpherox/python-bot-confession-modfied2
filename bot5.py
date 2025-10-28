@@ -2,17 +2,32 @@ import os
 import discord
 from discord.ext import commands
 from discord import app_commands
+from flask import Flask
+from threading import Thread
 
-# ===== BOT CONFIG =====
-TOKEN = os.getenv("DISCORD_TOKEN")  # ⚠️ Replace with your bot token (never share publicly)
+# ===================== KEEP ALIVE SERVER =====================
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "✅ The Confession Bot is running!"
+
+def run():
+    app.run(host='0.0.0.0', port=8080)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+
+# ===================== DISCORD BOT SETUP =====================
+TOKEN = os.getenv("DISCORD_TOKEN")  # Use your secret key in Replit Secrets
 GUILD_ID = 1405101978446598184  # Replace with your actual server ID
 
-# ===== INTENTS =====
 intents = discord.Intents.default()
 intents.message_content = True
 intents.guilds = True
 intents.members = True
-
 
 bot = commands.Bot(command_prefix=".", intents=intents)
 confession_channel_id = None
@@ -20,7 +35,6 @@ log_channel_id = None
 
 
 # ===================== MODALS =====================
-
 class ConfessModal(discord.ui.Modal, title="Submit a Confession"):
     confession = discord.ui.TextInput(
         label="What's your confession?",
@@ -41,7 +55,6 @@ class ConfessModal(discord.ui.Modal, title="Submit a Confession"):
             await interaction.response.send_message("⚠️ Confession channel not found!", ephemeral=True)
             return
 
-        # Create embed
         embed = discord.Embed(
             title="💭 Anonymous Confession",
             description=self.confession.value,
@@ -51,7 +64,6 @@ class ConfessModal(discord.ui.Modal, title="Submit a Confession"):
 
         await confession_channel.send(embed=embed, view=ReplyButtonView())
 
-        # Log to admin channel
         if log_channel_id:
             log_channel = interaction.client.get_channel(log_channel_id)
             if log_channel:
@@ -85,7 +97,6 @@ class ReplyModal(discord.ui.Modal, title="Reply Anonymously"):
 
 
 # ===================== BUTTON VIEWS =====================
-
 class ConfessButtonView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -105,7 +116,6 @@ class ReplyButtonView(discord.ui.View):
 
 
 # ===================== EVENTS =====================
-
 @bot.event
 async def on_ready():
     print(f"✅ Logged in as {bot.user}")
@@ -117,7 +127,6 @@ async def on_ready():
 
 
 # ===================== SLASH COMMANDS =====================
-
 @bot.tree.command(name="setchannel", description="Set confession and log channels", guild=discord.Object(id=GUILD_ID))
 @app_commands.describe(confession="Channel where confessions go", logs="Optional log channel")
 async def setchannel(interaction: discord.Interaction, confession: discord.TextChannel, logs: discord.TextChannel = None):
@@ -137,7 +146,6 @@ async def setchannel(interaction: discord.Interaction, confession: discord.TextC
     )
 
 
-# --- CONFESS TYPE 1: Button Portal ---
 @bot.tree.command(name="confess", description="Send a confession form (via button)", guild=discord.Object(id=GUILD_ID))
 async def confess_button(interaction: discord.Interaction):
     if not confession_channel_id:
@@ -152,7 +160,6 @@ async def confess_button(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed, view=ConfessButtonView(), ephemeral=True)
 
 
-# --- CONFESS TYPE 2: Direct Message ---
 @bot.tree.command(name="confessmsg", description="Send your confession directly (no button)", guild=discord.Object(id=GUILD_ID))
 @app_commands.describe(message="Type your confession message")
 async def confess_direct(interaction: discord.Interaction, message: str):
@@ -193,5 +200,6 @@ async def sync(interaction: discord.Interaction):
     await interaction.response.send_message(f"✅ Synced {len(synced)} commands.", ephemeral=True)
 
 
-# ===================== RUN BOT =====================
+# ===================== RUN =====================
+keep_alive()
 bot.run(TOKEN)
