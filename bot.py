@@ -1,11 +1,12 @@
+import os
 import discord
 from discord import app_commands
 from discord.ext import commands
 import asyncio
 
 # ==== SETTINGS ====
-TOKEN = "MTQyMDQyMzc3ODA2Mzg3NjE0Nw.G-oCcW.4kAQYjTWIB4kdquy22oAo4NgqU2xcpC3_uytLk"  # 🔹 Replace this with your bot token
-GUILD_ID = 1405101978446598184  # Optional: put your server ID here for faster sync, or leave None
+TOKEN = os.getenv("DISCORD_TOKEN")  # ✅ Secure: read token from environment variable
+GUILD_ID = 1405101978446598184  # Optional: your server ID
 
 # ==== INTENTS ====
 intents = discord.Intents.default()
@@ -25,7 +26,10 @@ logChannel = None
 async def on_ready():
     await Client.change_presence(activity=discord.Game(name="Confession Time 👀"))
     try:
-        synced = await tree.sync(guild=discord.Object(id=GUILD_ID)) if GUILD_ID else await tree.sync()
+        if GUILD_ID:
+            synced = await tree.sync(guild=discord.Object(id=GUILD_ID))
+        else:
+            synced = await tree.sync()
         print(f"✅ Synced {len(synced)} slash commands.")
     except Exception as e:
         print(f"❌ Sync failed: {e}")
@@ -75,4 +79,8 @@ async def confess(interaction: discord.Interaction, message: str):
     await interaction.response.send_message("✅ Your confession has been sent anonymously!", ephemeral=True)
 
 
-Client.run(TOKEN)
+# ==== START BOT ====
+if not TOKEN:
+    print("❌ ERROR: No token found. Set DISCORD_TOKEN as an environment variable.")
+else:
+    Client.run(TOKEN)
