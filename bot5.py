@@ -4,7 +4,7 @@ from discord.ext import commands
 from discord import app_commands
 
 # ===== BOT CONFIG =====
-TOKEN = ""  # ⚠️ Replace with your bot token (never share publicly)
+TOKEN = os.getenv("DISCORD_TOKEN")  # ⚠️ Replace with your bot token (never share publicly)
 GUILD_ID = 1405101978446598184  # Replace with your actual server ID
 
 # ===== INTENTS =====
@@ -12,6 +12,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.guilds = True
 intents.members = True
+
 
 bot = commands.Bot(command_prefix=".", intents=intents)
 confession_channel_id = None
