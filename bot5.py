@@ -21,7 +21,7 @@ def keep_alive():
 
 
 # ===================== DISCORD BOT SETUP =====================
-TOKEN = os.getenv("DISCORD_TOKEN")  # Use your secret key in Replit Secrets
+TOKEN = os.getenv("DISCORD_TOKEN")  # Put this in Replit Secrets
 GUILD_ID = 1405101978446598184  # Replace with your actual server ID
 
 intents = discord.Intents.default()
@@ -64,11 +64,12 @@ class ConfessModal(discord.ui.Modal, title="Submit a Confession"):
 
         await confession_channel.send(embed=embed, view=ReplyButtonView())
 
+        # Log for admin/mod
         if log_channel_id:
             log_channel = interaction.client.get_channel(log_channel_id)
             if log_channel:
                 await log_channel.send(
-                    f"🕵️ Confession by {interaction.user} ({interaction.user.id}):\n{self.confession.value}"
+                    f"🕵️ **Confession by {interaction.user} ({interaction.user.id})**:\n{self.confession.value}"
                 )
 
         await interaction.response.send_message("✅ Confession sent anonymously!", ephemeral=True)
@@ -87,12 +88,26 @@ class ReplyModal(discord.ui.Modal, title="Reply Anonymously"):
         self.original_message = original_message
 
     async def on_submit(self, interaction: discord.Interaction):
+        global log_channel_id
+
         embed = discord.Embed(
             title="💭 Anonymous Reply",
             description=self.reply.value,
             color=discord.Color.blurple()
         )
+
+        # Send publicly as anonymous reply
         await self.original_message.reply(embed=embed)
+
+        # Log who sent the anonymous reply
+        if log_channel_id:
+            log_channel = interaction.client.get_channel(log_channel_id)
+            if log_channel:
+                await log_channel.send(
+                    f"🕵️ **Anonymous reply by {interaction.user} ({interaction.user.id})** "
+                    f"on message ID `{self.original_message.id}`:\n{self.reply.value}"
+                )
+
         await interaction.response.send_message("✅ Reply sent anonymously!", ephemeral=True)
 
 
@@ -182,10 +197,11 @@ async def confess_direct(interaction: discord.Interaction, message: str):
     embed.set_footer(text="Reply anonymously below 👇")
     await confession_channel.send(embed=embed, view=ReplyButtonView())
 
+    # Log confession sender
     if log_channel_id:
         log_channel = interaction.client.get_channel(log_channel_id)
         if log_channel:
-            await log_channel.send(f"🕵️ Confession by {interaction.user} ({interaction.user.id}):\n{message}")
+            await log_channel.send(f"🕵️ **Confession by {interaction.user} ({interaction.user.id})**:\n{message}")
 
     await interaction.response.send_message("✅ Your confession has been sent anonymously!", ephemeral=True)
 
